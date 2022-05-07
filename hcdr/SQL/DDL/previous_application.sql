@@ -1,0 +1,41 @@
+use `home-credit-default-risk`;
+drop table if exists previous_application;
+create table previous_application (
+sk_id_prev varchar(7)
+,sk_id_curr varchar(6)
+,name_contract_type varchar(128)
+,amt_annuity double
+,amt_application double
+,amt_credit double
+,amt_down_payment integer
+,amt_goods_price integer
+,weekday_appr_process_start varchar(128)
+,hour_appr_process_start integer
+,flag_last_appl_per_contract varchar(1)
+,nflag_last_appl_in_day	integer
+,rate_down_payment double
+,rate_interest_primary double
+,rate_interest_privileged double
+,name_cash_loan_purpose varchar(128)
+,name_contract_status varchar(128)
+,days_decision integer
+,name_payment_type varchar(128)
+,code_reject_reason varchar(128)
+,name_type_suite varchar(128)
+,name_client_type varchar(128)
+,name_goods_category varchar(128)
+,name_portfolio varchar(128)
+,name_product_type varchar(128)
+,channel_type varchar(128)
+,sellerplace_area integer
+,name_seller_industry varchar(128)
+,cnt_payment integer
+,name_yield_group varchar(128)
+,product_combination varchar(128)
+,days_first_drawing integer
+,days_first_due integer
+,days_last_due_1st_version integer
+,days_last_due integer
+,days_termination integer
+,nflag_insured_on_approval integer
+);
