@@ -154,8 +154,8 @@ at2.sk_id_curr
 ,IFNULL(variance(b.amt_annuity), '0') as br_variance_pop_amt_annuity
 -- ,bb.months_balance 
 -- ,bb.status
-FROM application_train at2 
--- FROM application_test at2
+-- FROM application_train at2 
+FROM application_test at2
 LEFT JOIN bureau b
 ON at2.sk_id_curr = b.sk_id_curr
 LEFT JOIN  bureau_balance bb 

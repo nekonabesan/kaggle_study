@@ -7,7 +7,7 @@ SELECT
 at2.sk_id_curr
 -- ,at2.target 
 -- AMT_ANNUITY|ÉçÅ[Éìéxï•Ç¢äz|
-,IFNULL(min(pa.amt_annuity), '0') as hc_all_min_amt_annuity
+,ROUND(IFNULL(min(pa.amt_annuity), '0'), 5) as hc_all_min_amt_annuity
 ,IFNULL(max(pa.amt_annuity), '0') as hc_all_max_amt_annuity
 ,IFNULL(sum(pa.amt_annuity), '0') as hc_all_sum_amt_annuity
 ,IFNULL(avg(pa.amt_annuity), '0') as hc_all_avg_amt_annuity

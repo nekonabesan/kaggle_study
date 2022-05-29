@@ -1,0 +1,32 @@
+2022-05-16 22:44:52,850 [INFO]  
+========== start: fit model
+2022-05-16 22:44:52,850 [WARNING]  Already bound, ignoring bind()
+2022-05-16 22:44:57,114 [INFO]  Epoch[0] Batch [0-8649]	Speed: 32487.42 samples/sec	cross-entropy=648.171243	NAME_CONTRACT_TYPE-accuracy=0.000000
+2022-05-16 22:45:01,434 [INFO]  Epoch[0] Train-cross-entropy=656.296136
+2022-05-16 22:45:01,434 [INFO]  Epoch[0] Train-NAME_CONTRACT_TYPE-accuracy=0.000000
+2022-05-16 22:45:01,435 [INFO]  Epoch[0] Time cost=8.583
+2022-05-16 22:45:01,439 [INFO]  Saved checkpoint to "imputer_model\model-0000.params"
+2022-05-16 22:45:01,868 [INFO]  Epoch[0] Validation-cross-entropy=38.501704
+2022-05-16 22:45:01,869 [INFO]  Epoch[0] Validation-NAME_CONTRACT_TYPE-accuracy=0.000000
+2022-05-16 22:45:06,200 [INFO]  Epoch[1] Batch [0-8649]	Speed: 31970.87 samples/sec	cross-entropy=793.992406	NAME_CONTRACT_TYPE-accuracy=0.000000
+2022-05-16 22:45:10,501 [INFO]  Epoch[1] Train-cross-entropy=494.636808
+2022-05-16 22:45:10,502 [INFO]  Epoch[1] Train-NAME_CONTRACT_TYPE-accuracy=0.000000
+2022-05-16 22:45:10,502 [INFO]  Epoch[1] Time cost=8.632
+2022-05-16 22:45:10,505 [INFO]  Saved checkpoint to "imputer_model\model-0001.params"
+2022-05-16 22:45:10,926 [INFO]  Epoch[1] Validation-cross-entropy=38.059160
+2022-05-16 22:45:10,926 [INFO]  Epoch[1] Validation-NAME_CONTRACT_TYPE-accuracy=0.000000
+2022-05-16 22:45:15,194 [INFO]  Epoch[2] Batch [0-8649]	Speed: 32434.07 samples/sec	cross-entropy=838.637223	NAME_CONTRACT_TYPE-accuracy=0.000000
+2022-05-16 22:45:19,367 [INFO]  Epoch[2] Train-cross-entropy=3888.382425
+2022-05-16 22:45:19,367 [INFO]  Epoch[2] Train-NAME_CONTRACT_TYPE-accuracy=0.000000
+2022-05-16 22:45:19,368 [INFO]  Epoch[2] Time cost=8.440
+2022-05-16 22:45:19,371 [INFO]  Saved checkpoint to "imputer_model\model-0002.params"
+2022-05-16 22:45:19,814 [INFO]  Epoch[2] Validation-cross-entropy=680.949451
+2022-05-16 22:45:19,815 [INFO]  Epoch[2] Validation-NAME_CONTRACT_TYPE-accuracy=0.000000
+2022-05-16 22:45:24,033 [INFO]  Epoch[3] Batch [0-8649]	Speed: 32816.80 samples/sec	cross-entropy=1332.849034	NAME_CONTRACT_TYPE-accuracy=0.000000
+2022-05-16 22:45:28,206 [INFO]  Epoch[3] Train-cross-entropy=713.598013
+2022-05-16 22:45:28,206 [INFO]  Epoch[3] Train-NAME_CONTRACT_TYPE-accuracy=0.000000
+2022-05-16 22:45:28,207 [INFO]  Epoch[3] Time cost=8.393
+2022-05-16 22:45:28,210 [INFO]  Saved checkpoint to "imputer_model\model-0003.params"
+2022-05-16 22:45:28,645 [INFO]  No improvement detected for 3 epochs compared to 38.501703842993706 last error obtained: 1758.8763819669336, stopping here
+2022-05-16 22:45:28,646 [INFO]  
+========== done (35.796435832977295 s) fit model
