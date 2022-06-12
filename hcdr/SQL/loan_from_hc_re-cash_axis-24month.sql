@@ -5,6 +5,16 @@
 SELECT 
 /* app_train */
 at2.sk_id_curr
+-- ,at2.target
+,truncate((abs(at2.days_birth) / 364.25), 0) as user_age
+,(at2.days_registration - at2.days_birth) as unique_key_1
+,(at2.days_id_publish - at2.days_birth) as unique_key_2
+,case 
+    when at2.code_gender = 'M' then 0
+    when at2.code_gender = 'F' then 1
+    else 2
+end as gender_key
+,count(at2.sk_id_curr) as value_count
 -- ,at2.target 
 -- ,at2.name_contract_type
 -- ,pa.name_contract_type as pac
@@ -181,6 +191,19 @@ AND pa.name_contract_type = "Cash loans"
     OR pcb.name_contract_status = 'Canceled' 
     OR pcb.name_contract_status = 'Amortized debt')*/
 AND abs(pcb.months_balance) <= 24
-GROUP BY at2.sk_id_curr
-ORDER BY at2.sk_id_curr,pa.sk_id_prev,pcb.months_balance
+GROUP BY 
+-- at2.sk_id_curr
+unique_key_1
+,unique_key_2
+,code_gender
+,region_population_relative
+ORDER BY
+unique_key_1 desc
+,unique_key_2 desc
+,code_gender
+,region_population_relative
+,user_age
+,at2.sk_id_curr
+,pa.sk_id_prev
+,pcb.months_balance
 ;

@@ -116,6 +116,26 @@ class Modules:
         except BaseException as err:
             print(f"Unexpected {err=}, {type(err)=}")
             raise
+
+    # ラベルエンコーディング2
+    def process_label_encoding_tr(self, app_train, colmun):
+        try:
+            app_train[colmun].fillna('BLANK', inplace=True)
+            replace_columns = app_train[colmun].unique().tolist()
+            replace_value = [x for x in range(len(replace_columns))]
+            app_train[colmun].replace(replace_columns, replace_value, inplace=True)
+            return True
+        except NameError as err:
+            print("NameError: {0}".format(err))
+        except TypeError as err:
+            print("TypeError: {0}".format(err))
+        except ValueError as err:
+            print("ValueError: {0}".format(err))
+        except OSError as err:
+            print("OS error: {0}".format(err))
+        except BaseException as err:
+            print(f"Unexpected {err=}, {type(err)=}")
+            raise
     
     # one-hot-encoding
     def one_hot_encoding(self, app_train, app_test, cat_col):
