@@ -1,4 +1,7 @@
 .vscode/
+/.ipynb_checkpoints/
+hcdr/.ipynb_checkpoints/
+hcdr/.ipynb_checkpoints/*
 __pycache__/
 lab/
 *.csv
