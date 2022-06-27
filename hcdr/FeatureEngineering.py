@@ -12,6 +12,9 @@ from sklearn import metrics
 import optuna
 from optuna.distributions import UniformDistribution
 
+from pandas.api.types import is_string_dtype
+from pandas.api.types import is_numeric_dtype
+
 from sklearn.preprocessing import OneHotEncoder, LabelEncoder
 from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import roc_auc_score
@@ -100,17 +103,42 @@ class FeatureEngineering:
         del df_train, df_test
         gc.collect()
         """
-        df = pd.read_csv(file_path + '/ ' + file_name)
+        df = pd.read_csv(file_path + file_name)
         
+        for col in df.columns:
+            #if df[col].dtype=='O':
+            if (is_string_dtype(df[col])):
+                df[col] = df[col].astype(str).str.replace(" ","_")
+                df[col] = df[col].astype(str).str.replace(':','_')
+                df[col]=  df[col].astype(str).str.replace("/","_")
+                df[col] = df[col].astype(str).str.replace(",","")
+                df[col] = df[col].astype(str).str.replace(" ","_")
+                ###
+                df[col] = df[col].astype(str).str.replace('-', '_')
+                df[col] = df[col].astype(str).str.replace(r'\,', r'_')
+                df[col] = df[col].astype(str).str.replace(r'\(', r'_')
+                df[col] = df[col].astype(str).str.replace(r'\)', r'_')
+                df[col] = df[col].astype(str).str.replace(r'\+', r'_')
+
         # Remove some rows with values not present in test set
-        df.drop(df[df['CODE_GENDER'] == 'XNA'].index, inplace = True)
-        df.drop(df[df['NAME_INCOME_TYPE'] == 'Maternity leave'].index, inplace = True)
-        df.drop(df[df['NAME_FAMILY_STATUS'] == 'Unknown'].index, inplace = True)
-        
+        #df.drop(df[df['CODE_GENDER'] == 'XNA'].index, inplace = True)
+        #df.drop(df[df['NAME_INCOME_TYPE'] == 'Maternity leave'].index, inplace = True)
+        #df.drop(df[df['NAME_FAMILY_STATUS'] == 'Unknown'].index, inplace = True)
+        df['CODE_GENDER'].replace(['XNA'], ['M'], inplace=True)
+        df['NAME_INCOME_TYPE'].replace(['Maternityleave'], ['Unemployed'], inplace=True)
+        df['NAME_INCOME_TYPE'].replace(['Maternity_leave'], ['Unemployed'], inplace=True)
+        df['NAME_FAMILY_STATUS'].replace('Unknown', 'Married', inplace=True)
+        df['DAYS_EMPLOYED'].replace(365243, np.nan, inplace=True)
+
         # Remove some empty features
         df.drop(['FLAG_DOCUMENT_2', 'FLAG_DOCUMENT_10', 'FLAG_DOCUMENT_12', 'FLAG_DOCUMENT_13', 'FLAG_DOCUMENT_14', 
                 'FLAG_DOCUMENT_15', 'FLAG_DOCUMENT_16', 'FLAG_DOCUMENT_17', 'FLAG_DOCUMENT_19', 'FLAG_DOCUMENT_20', 
-                'FLAG_DOCUMENT_21'], axis = 1, inplace = True)
+                'FLAG_DOCUMENT_21', 
+                'EMERGENCYSTATE_MODE', 'FONDKAPREMONT_MODE', 'HOUSETYPE_MODE', 'WALLSMATERIAL_MODE'], axis = 1, inplace = True)
+
+        # 欠損値補完
+        df = df.fillna({'NAME_TYPE_SUITE': 'Unaccompanied'})
+        #df = df.fillna(0)
         
         # Replace some outliers
         df['DAYS_EMPLOYED'].replace(365243, np.nan, inplace = True)
@@ -128,10 +156,14 @@ class FeatureEngineering:
         df, _ = self.one_hot_encoder(df, nan_as_category)
         
         # Some new features
-        df['app missing'] = df.isnull().sum(axis = 1).values
-        
-        df['app_EXT_SOURCE_mean'] = df[['EXT_SOURCE_1', 'EXT_SOURCE_2', 'EXT_SOURCE_3']].mean(axis = 1)
-        df['app_EXT_SOURCE_std'] = df[['EXT_SOURCE_1', 'EXT_SOURCE_2', 'EXT_SOURCE_3']].std(axis = 1)
+        df['app_missing'] = df.isnull().sum(axis = 1).values
+        #ext_sourceの積
+        df['NEW_SOURCES_PROD'] = df['EXT_SOURCE_1'] * df['EXT_SOURCE_2'] * df['EXT_SOURCE_3']
+        #ext_sourceの平均
+        df['app_NEW_EXT_SOURCES_MEAN'] = df[['EXT_SOURCE_1', 'EXT_SOURCE_2', 'EXT_SOURCE_3']].mean(axis=1)
+        #ext_sourceの標準偏差
+        df['app_NEW_SCORES_STD'] = df[['EXT_SOURCE_1', 'EXT_SOURCE_2', 'EXT_SOURCE_3']].std(axis=1)
+
         df['app_EXT_SOURCE_prod'] = df['EXT_SOURCE_1'] * df['EXT_SOURCE_2'] * df['EXT_SOURCE_3']
         df['app_EXT_SOURCE_1_times_EXT_SOURCE_2'] = df['EXT_SOURCE_1'] * df['EXT_SOURCE_2']
         df['app_EXT_SOURCE_1_times_EXT_SOURCE_3'] = df['EXT_SOURCE_1'] * df['EXT_SOURCE_3']
@@ -139,19 +171,24 @@ class FeatureEngineering:
         df['app_EXT_SOURCE_1_times_DAYS_EMPLOYED'] = df['EXT_SOURCE_1'] * df['DAYS_EMPLOYED']
         df['app_EXT_SOURCE_2_times_DAYS_EMPLOYED'] = df['EXT_SOURCE_2'] * df['DAYS_EMPLOYED']
         df['app_EXT_SOURCE_3_times_DAYS_EMPLOYED'] = df['EXT_SOURCE_3'] * df['DAYS_EMPLOYED']
-        df['app_EXT_SOURCE_1_div_DAYS_BIRTH'] = df['EXT_SOURCE_1'] / df['DAYS_BIRTH']
-        df['app_EXT_SOURCE_2_div_DAYS_BIRTH'] = df['EXT_SOURCE_2'] / df['DAYS_BIRTH']
-        df['app_EXT_SOURCE_3_div_DAYS_BIRTH'] = df['EXT_SOURCE_3'] / df['DAYS_BIRTH']
+        df['app_EXT_SOURCE_1_PER_DAYS_BIRTH'] = df['EXT_SOURCE_1'] / df['DAYS_BIRTH']
+        df['app_EXT_SOURCE_2_PER_DAYS_BIRTH'] = df['EXT_SOURCE_2'] / df['DAYS_BIRTH']
+        df['app_EXT_SOURCE_3_PER_DAYS_BIRTH'] = df['EXT_SOURCE_3'] / df['DAYS_BIRTH']
         
-        df['app_AMT_CREDIT-AMT_GOODS_PRICE'] = df['AMT_CREDIT'] - df['AMT_GOODS_PRICE']
-        df['app_AMT_CREDIT_div_AMT_GOODS_PRICE'] = df['AMT_CREDIT'] / df['AMT_GOODS_PRICE']
-        df['app_AMT_CREDIT_div_AMT_ANNUITY'] = df['AMT_CREDIT'] / df['AMT_ANNUITY']
-        df['app_AMT_CREDIT_div_AMT_INCOME_TOTAL'] = df['AMT_CREDIT'] / df['AMT_INCOME_TOTAL']
+        df['app_AMT_CREDIT_AMT_GOODS_PRICE'] = df['AMT_CREDIT'] - df['AMT_GOODS_PRICE']
+        df['app_AMT_CREDIT_PER_AMT_GOODS_PRICE'] = df['AMT_CREDIT'] / df['AMT_GOODS_PRICE']
+        df['app_AMT_CREDIT_PER_AMT_ANNUITY'] = df['AMT_CREDIT'] / df['AMT_ANNUITY']
+        #年利
+        df['app_PAYMENT_RATE'] = df['AMT_ANNUITY'] / df['AMT_CREDIT']
+        df['app_AMT_CREDIT_PER_AMT_INCOME_TOTAL'] = df['AMT_CREDIT'] / df['AMT_INCOME_TOTAL']
+        #収入に対するクレジット額の割合
+        df['app_INCOME_CREDIT_PERC'] = df['AMT_INCOME_TOTAL'] / df['AMT_CREDIT']
         
-        df['app_AMT_INCOME_TOTAL_div_12-AMT_ANNUITY'] = df['AMT_INCOME_TOTAL'] / 12. - df['AMT_ANNUITY']
-        df['app_AMT_INCOME_TOTAL_div_AMT_ANNUITY'] = df['AMT_INCOME_TOTAL'] / df['AMT_ANNUITY']
-        df['app_AMT_INCOME_TOTAL-AMT_GOODS_PRICE'] = df['AMT_INCOME_TOTAL'] - df['AMT_GOODS_PRICE']
-        df['app_AMT_INCOME_TOTAL_div_CNT_FAM_MEMBERS'] = df['AMT_INCOME_TOTAL'] / df['CNT_FAM_MEMBERS']
+        df['app_AMT_INCOME_TOTAL_div_12_AMT_ANNUITY'] = df['AMT_INCOME_TOTAL'] / 12. - df['AMT_ANNUITY']
+        df['app_AMT_INCOME_TOTAL_PER_AMT_ANNUITY'] = df['AMT_INCOME_TOTAL'] / df['AMT_ANNUITY']
+        df['app_ANNUITY_INCOME_PERC'] = df['AMT_ANNUITY'] / df['AMT_INCOME_TOTAL'] #収入に対するローンの割合
+        df['app_AMT_INCOME_TOTAL_AMT_GOODS_PRICE'] = df['AMT_INCOME_TOTAL'] - df['AMT_GOODS_PRICE'] #家庭の中で1人当たりの収入
+        df['app_INCOME_PER_PERSON'] = df['AMT_INCOME_TOTAL'] / df['CNT_FAM_MEMBERS']
         df['app_AMT_INCOME_TOTAL_div_CNT_CHILDREN'] = df['AMT_INCOME_TOTAL'] / (1 + df['CNT_CHILDREN'])
         
         df['app_most_popular_AMT_GOODS_PRICE'] = df['AMT_GOODS_PRICE'] \
@@ -164,18 +201,39 @@ class FeatureEngineering:
         
         df['app_DAYS_LAST_PHONE_CHANGE_div_DAYS_BIRTH'] = df['DAYS_LAST_PHONE_CHANGE'] / df['DAYS_BIRTH']
         df['app_DAYS_LAST_PHONE_CHANGE_div_DAYS_EMPLOYED'] = df['DAYS_LAST_PHONE_CHANGE'] / df['DAYS_EMPLOYED']
-        df['app_DAYS_EMPLOYED-DAYS_BIRTH'] = df['DAYS_EMPLOYED'] - df['DAYS_BIRTH']
+        df['app_DAYS_EMPLOYED_PERC'] = df['DAYS_EMPLOYED'] - df['DAYS_BIRTH']
         df['app_DAYS_EMPLOYED_div_DAYS_BIRTH'] = df['DAYS_EMPLOYED'] / df['DAYS_BIRTH']
         
-        df['app CNT_CHILDREN_div_CNT_FAM_MEMBERS'] = df['CNT_CHILDREN'] / df['CNT_FAM_MEMBERS']
+        df['app_CNT_CHILDREN_div_CNT_FAM_MEMBERS'] = df['CNT_CHILDREN'] / df['CNT_FAM_MEMBERS']
+
+        df = df.replace([np.inf, -np.inf], np.nan)
         
         return self.reduce_mem_usage(df)
 
 
 
 
-    def bureau_and_balance(self, file_path = file_path, nan_as_category = True):
+    def bureau_and_balance(self, file_path, nan_as_category = True):
         df_bureau_b = self.reduce_mem_usage(pd.read_csv(file_path + 'bureau_balance.csv'), verbose = False)
+
+
+        for col in df_bureau_b.columns:
+            #if df_bureau_b[col].dtype=='O':
+            if (is_string_dtype(df_bureau_b[col])):
+                df_bureau_b[col] = df_bureau_b[col].astype(str).str.replace(" ","_")
+                df_bureau_b[col] = df_bureau_b[col].astype(str).str.replace(':','_')
+                df_bureau_b[col]=  df_bureau_b[col].astype(str).str.replace("/","_")
+                df_bureau_b[col] = df_bureau_b[col].astype(str).str.replace(",","")
+                df_bureau_b[col] = df_bureau_b[col].astype(str).str.replace(" ","_")
+                ###
+                df_bureau_b[col] = df_bureau_b[col].astype(str).str.replace('-', '_')
+                df_bureau_b[col] = df_bureau_b[col].astype(str).str.replace(r'\,', r'_')
+                df_bureau_b[col] = df_bureau_b[col].astype(str).str.replace(r'\(', r'_')
+                df_bureau_b[col] = df_bureau_b[col].astype(str).str.replace(r'\)', r'_')
+                df_bureau_b[col] = df_bureau_b[col].astype(str).str.replace(r'\+', r'_')
+
+        # 欠損値補完
+        df_bureau_b = df_bureau_b.replace([np.inf, -np.inf], np.nan)
         
         # Some new features in bureau_balance set
         tmp = df_bureau_b[['SK_ID_BUREAU', 'STATUS']].groupby('SK_ID_BUREAU')
@@ -210,7 +268,7 @@ class FeatureEngineering:
                             .groupby('SK_ID_BUREAU').count()
             tmp.columns = ['DPD_' + str(c) + '_cnt']
             df_bureau_b = df_bureau_b.join(tmp, how = 'left', on = 'SK_ID_BUREAU')
-            df_bureau_b['DPD_' + str(c) + ' / Month'] = df_bureau_b['DPD_' + str(c) + '_cnt'] / df_bureau_b['Month']
+            df_bureau_b['DPD_' + str(c) + '_Month'] = df_bureau_b['DPD_' + str(c) + '_cnt'] / df_bureau_b['Month']
             del tmp
             gc.collect()
         df_bureau_b['Non_zero_DPD_cnt'] = df_bureau_b[['DPD_1_cnt', 'DPD_2_cnt', 'DPD_3_cnt', 'DPD_4_cnt', 'DPD_5_cnt']].sum(axis = 1)
@@ -227,6 +285,25 @@ class FeatureEngineering:
         gc.collect()
 
         df_bureau = self.reduce_mem_usage(pd.read_csv(file_path + 'bureau.csv'), verbose = False)
+
+        for col in df_bureau.columns:
+            #if df_bureau[col].dtype=='O':
+            if (is_string_dtype(df_bureau[col])):
+                df_bureau[col] = df_bureau[col].astype(str).str.replace(" ","_")
+                df_bureau[col] = df_bureau[col].astype(str).str.replace(':','_')
+                df_bureau[col]=  df_bureau[col].astype(str).str.replace("/","_")
+                df_bureau[col] = df_bureau[col].astype(str).str.replace(",","")
+                df_bureau[col] = df_bureau[col].astype(str).str.replace(" ","_")
+                ###
+                df_bureau[col] = df_bureau[col].astype(str).str.replace('-', '_')
+                df_bureau[col] = df_bureau[col].astype(str).str.replace(r'\,', r'_')
+                df_bureau[col] = df_bureau[col].astype(str).str.replace(r'\(', r'_')
+                df_bureau[col] = df_bureau[col].astype(str).str.replace(r'\)', r'_')
+                df_bureau[col] = df_bureau[col].astype(str).str.replace(r'\+', r'_')
+        
+        # 欠損値補完
+        df_bureau = df_bureau.replace([np.inf, -np.inf], np.nan)
+        #df_bureau = df_bureau.fillna(0)
                     
         # Replace\remove some outliers in bureau set
         df_bureau.loc[df_bureau['AMT_ANNUITY'] > .8e8, 'AMT_ANNUITY'] = np.nan
@@ -240,15 +317,15 @@ class FeatureEngineering:
         df_bureau.drop(df_bureau[df_bureau['DAYS_ENDDATE_FACT'] < df_bureau['DAYS_CREDIT']].index, inplace = True)
         
         # Some new features in bureau set
-        df_bureau['bureau_AMT_CREDIT_SUM-AMT_CREDIT_SUM_DEBT'] = df_bureau['AMT_CREDIT_SUM'] - df_bureau['AMT_CREDIT_SUM_DEBT']
-        df_bureau['bureau_AMT_CREDIT_SUM-AMT_CREDIT_SUM_LIMIT'] = df_bureau['AMT_CREDIT_SUM'] - df_bureau['AMT_CREDIT_SUM_LIMIT']
-        df_bureau['bureau_AMT_CREDIT_SUM-AMT_CREDIT_SUM_OVERDUE'] = df_bureau['AMT_CREDIT_SUM'] - df_bureau['AMT_CREDIT_SUM_OVERDUE']
+        df_bureau['bureau_AMT_CREDIT_SUM__AMT_CREDIT_SUM_DEBT'] = df_bureau['AMT_CREDIT_SUM'] - df_bureau['AMT_CREDIT_SUM_DEBT']
+        df_bureau['bureau_AMT_CREDIT_SUM__AMT_CREDIT_SUM_LIMIT'] = df_bureau['AMT_CREDIT_SUM'] - df_bureau['AMT_CREDIT_SUM_LIMIT']
+        df_bureau['bureau_AMT_CREDIT_SUM__AMT_CREDIT_SUM_OVERDUE'] = df_bureau['AMT_CREDIT_SUM'] - df_bureau['AMT_CREDIT_SUM_OVERDUE']
 
-        df_bureau['bureau_DAYS_CREDIT-CREDIT_DAY_OVERDUE'] = df_bureau['DAYS_CREDIT'] - df_bureau['CREDIT_DAY_OVERDUE']
-        df_bureau['bureau_DAYS_CREDIT-DAYS_CREDIT_ENDDATE'] = df_bureau['DAYS_CREDIT'] - df_bureau['DAYS_CREDIT_ENDDATE']
-        df_bureau['bureau_DAYS_CREDIT-DAYS_ENDDATE_FACT'] = df_bureau['DAYS_CREDIT'] - df_bureau['DAYS_ENDDATE_FACT']
-        df_bureau['bureau_DAYS_CREDIT_ENDDATE-DAYS_ENDDATE_FACT'] = df_bureau['DAYS_CREDIT_ENDDATE'] - df_bureau['DAYS_ENDDATE_FACT']
-        df_bureau['bureau_DAYS_CREDIT_UPDATE-DAYS_CREDIT_ENDDATE'] = df_bureau['DAYS_CREDIT_UPDATE'] - df_bureau['DAYS_CREDIT_ENDDATE']
+        df_bureau['bureau_DAYS_CREDIT__CREDIT_DAY_OVERDUE'] = df_bureau['DAYS_CREDIT'] - df_bureau['CREDIT_DAY_OVERDUE']
+        df_bureau['bureau_DAYS_CREDIT__DAYS_CREDIT_ENDDATE'] = df_bureau['DAYS_CREDIT'] - df_bureau['DAYS_CREDIT_ENDDATE']
+        df_bureau['bureau_DAYS_CREDIT__DAYS_ENDDATE_FACT'] = df_bureau['DAYS_CREDIT'] - df_bureau['DAYS_ENDDATE_FACT']
+        df_bureau['bureau_DAYS_CREDIT_ENDDATE__DAYS_ENDDATE_FACT'] = df_bureau['DAYS_CREDIT_ENDDATE'] - df_bureau['DAYS_ENDDATE_FACT']
+        df_bureau['bureau_DAYS_CREDIT_UPDATE__DAYS_CREDIT_ENDDATE'] = df_bureau['DAYS_CREDIT_UPDATE'] - df_bureau['DAYS_CREDIT_ENDDATE']
         
         # Categorical features with One-Hot encode
         df_bureau, bureau_cat = self.one_hot_encoder(df_bureau, nan_as_category)
@@ -280,7 +357,10 @@ class FeatureEngineering:
         df_bureau_agg = df_bureau_agg.join(closed_agg, how = 'left')
         del closed_agg, df_bureau
         gc.collect()
-        
+
+        df_bureau_agg = df_bureau_agg.replace([np.inf, -np.inf], np.nan)
+        df_bureau_agg = df_bureau_agg.fillna(df_bureau_agg.max() + (df_bureau_agg.max() * 0.4))
+
         return self.reduce_mem_usage(df_bureau_agg)
 
 
@@ -288,7 +368,25 @@ class FeatureEngineering:
 
     def previous_application(self, file_path, nan_as_category = True):
         df_prev = pd.read_csv(file_path + 'previous_application.csv')
-        
+
+        for col in df_prev.columns:
+            if df_prev[col].dtype=='O':
+                df_prev[col] = df_prev[col].astype(str).str.replace(" ","_")
+                df_prev[col] = df_prev[col].astype(str).str.replace(':','_')
+                df_prev[col]=  df_prev[col].astype(str).str.replace("/","_")
+                df_prev[col] = df_prev[col].astype(str).str.replace(",","")
+                df_prev[col] = df_prev[col].astype(str).str.replace(" ","_")
+                ###
+                df_prev[col] = df_prev[col].astype(str).str.replace('-', '_')
+                df_prev[col] = df_prev[col].astype(str).str.replace(r'\,', r'_')
+                df_prev[col] = df_prev[col].astype(str).str.replace(r'\(', r'_')
+                df_prev[col] = df_prev[col].astype(str).str.replace(r'\)', r'_')
+                df_prev[col] = df_prev[col].astype(str).str.replace(r'\+', r'_')
+
+        # 欠損値補完
+        #df_prev = df_prev.fillna(0)
+
+        #df_prev['CHANNEL_TYPE'] = df_prev['CHANNEL_TYPE'].replace("AP+_(Cash_loan)", "AP_Cash_loan")
         # Replace some outliers
         df_prev.loc[df_prev['AMT_CREDIT'] > 6000000, 'AMT_CREDIT'] = np.nan
         df_prev.loc[df_prev['SELLERPLACE_AREA'] > 3500000, 'SELLERPLACE_AREA'] = np.nan
@@ -298,11 +396,11 @@ class FeatureEngineering:
         # Some new features
         df_prev['prev_missing'] = df_prev.isnull().sum(axis = 1).values
         df_prev['prev_AMT_APPLICATION_div_AMT_CREDIT'] = df_prev['AMT_APPLICATION'] / df_prev['AMT_CREDIT']
-        df_prev['prev_AMT_APPLICATION-AMT_CREDIT'] = df_prev['AMT_APPLICATION'] - df_prev['AMT_CREDIT']
-        df_prev['prev_AMT_APPLICATION-AMT_GOODS_PRICE'] = df_prev['AMT_APPLICATION'] - df_prev['AMT_GOODS_PRICE']
-        df_prev['prev_AMT_GOODS_PRICE-AMT_CREDIT'] = df_prev['AMT_GOODS_PRICE'] - df_prev['AMT_CREDIT']
-        df_prev['prev_DAYS_FIRST_DRAWING-DAYS_FIRST_DUE'] = df_prev['DAYS_FIRST_DRAWING'] - df_prev['DAYS_FIRST_DUE']
-        df_prev['prev_DAYS_TERMINATION less-500'] = (df_prev['DAYS_TERMINATION'] < -500).astype(int)
+        df_prev['prev_AMT_APPLICATION__AMT_CREDIT'] = df_prev['AMT_APPLICATION'] - df_prev['AMT_CREDIT']
+        df_prev['prev_AMT_APPLICATION__AMT_GOODS_PRICE'] = df_prev['AMT_APPLICATION'] - df_prev['AMT_GOODS_PRICE']
+        df_prev['prev_AMT_GOODS_PRICE__AMT_CREDIT'] = df_prev['AMT_GOODS_PRICE'] - df_prev['AMT_CREDIT']
+        df_prev['prev_DAYS_FIRST_DRAWING__DAYS_FIRST_DUE'] = df_prev['DAYS_FIRST_DRAWING'] - df_prev['DAYS_FIRST_DUE']
+        df_prev['prev_DAYS_TERMINATION_less__500'] = (df_prev['DAYS_TERMINATION'] < -500).astype(int)
         
         # Categorical features with One-Hot encode
         df_prev, categorical = self.one_hot_encoder(df_prev, nan_as_category)
@@ -316,7 +414,7 @@ class FeatureEngineering:
         
         # Previous Applications: Approved Applications
         approved_agg = df_prev[df_prev['NAME_CONTRACT_STATUS_Approved'] == 1].groupby('SK_ID_CURR').agg(aggregations)
-        approved_agg.columns = pd.Index(['APPROVED_' + e[0] + "_" + e[1].upper() for e in approved_agg.columns.tolist()])
+        approved_agg.columns = pd.Index(['APPROVED_' + e[0] + '_' + e[1].upper() for e in approved_agg.columns.tolist()])
         df_prev_agg = df_prev_agg.join(approved_agg, how = 'left')
         del approved_agg
         gc.collect()
@@ -327,6 +425,9 @@ class FeatureEngineering:
         df_prev_agg = df_prev_agg.join(refused_agg, how = 'left')
         del refused_agg, df_prev
         gc.collect()
+
+        df_prev_agg = df_prev_agg.replace([np.inf, -np.inf], np.nan)
+        df_prev_agg = df_prev_agg.fillna(df_prev_agg.max() + (df_prev_agg.max() * 0.4))
         
         return self.reduce_mem_usage(df_prev_agg)
 
@@ -334,12 +435,30 @@ class FeatureEngineering:
 
     def pos_cash(self, file_path, nan_as_category = True):
         df_pos = pd.read_csv(file_path + 'POS_CASH_balance.csv')
+
+        for col in df_pos.columns:
+            if df_pos[col].dtype=='O':
+                df_pos[col] = df_pos[col].astype(str).str.replace(" ","_")
+                df_pos[col] = df_pos[col].astype(str).str.replace(':','_')
+                df_pos[col]=  df_pos[col].astype(str).str.replace("/","_")
+                df_pos[col] = df_pos[col].astype(str).str.replace(",","")
+                df_pos[col] = df_pos[col].astype(str).str.replace(" ","_")
+                ###
+                df_pos[col] = df_pos[col].astype(str).str.replace('-', '_')
+                df_pos[col] = df_pos[col].astype(str).str.replace(r'\,', r'_')
+                df_pos[col] = df_pos[col].astype(str).str.replace(r'\(', r'_')
+                df_pos[col] = df_pos[col].astype(str).str.replace(r'\)', r'_')
+                df_pos[col] = df_pos[col].astype(str).str.replace(r'\+', r'_')
+
+        # 欠損値補
+        #df_pos = df_pos.fillna(0)
+        
         
         # Replace some outliers
         df_pos.loc[df_pos['CNT_INSTALMENT_FUTURE'] > 60, 'CNT_INSTALMENT_FUTURE'] = np.nan
         
         # Some new features
-        df_pos['pos CNT_INSTALMENT more CNT_INSTALMENT_FUTURE'] = \
+        df_pos['pos_CNT_INSTALMENT_more_CNT_INSTALMENT_FUTURE'] = \
                         (df_pos['CNT_INSTALMENT'] > df_pos['CNT_INSTALMENT_FUTURE']).astype(int)
         
         # Categorical features with One-Hot encode
@@ -356,23 +475,43 @@ class FeatureEngineering:
         df_pos_agg['POS_COUNT'] = df_pos.groupby('SK_ID_CURR').size()
         del df_pos
         gc.collect()
+
+        df_pos_agg = df_pos_agg.replace([np.inf, -np.inf], np.nan)
+        df_pos_agg = df_pos_agg.fillna(df_pos_agg.max() + (df_pos_agg.max() * 0.4))
         
         return self.reduce_mem_usage(df_pos_agg)
 
 
     def installments_payments(self, file_path, nan_as_category = True):
         df_ins = pd.read_csv(file_path + 'installments_payments.csv')
+
+        for col in df_ins.columns:
+            if df_ins[col].dtype=='O':
+                df_ins[col] = df_ins[col].astype(str).str.replace(" ","_")
+                df_ins[col] = df_ins[col].astype(str).str.replace(':','_')
+                df_ins[col]=  df_ins[col].astype(str).str.replace("/","_")
+                df_ins[col] = df_ins[col].astype(str).str.replace(",","")
+                df_ins[col] = df_ins[col].astype(str).str.replace(" ","_")
+                ###
+                df_ins[col] = df_ins[col].astype(str).str.replace('-', '_')
+                df_ins[col] = df_ins[col].astype(str).str.replace(r'\,', r'_')
+                df_ins[col] = df_ins[col].astype(str).str.replace(r'\(', r'_')
+                df_ins[col] = df_ins[col].astype(str).str.replace(r'\)', r'_')
+                df_ins[col] = df_ins[col].astype(str).str.replace(r'\+', r'_')
+
+        # 欠損値補完
+        #df_ins = df_ins.fillna(0)
         
         # Replace some outliers
         df_ins.loc[df_ins['NUM_INSTALMENT_VERSION'] > 70, 'NUM_INSTALMENT_VERSION'] = np.nan
         df_ins.loc[df_ins['DAYS_ENTRY_PAYMENT'] < -4000, 'DAYS_ENTRY_PAYMENT'] = np.nan
         
         # Some new features
-        df_ins['ins_DAYS_ENTRY_PAYMENT-DAYS_INSTALMENT'] = df_ins['DAYS_ENTRY_PAYMENT'] - df_ins['DAYS_INSTALMENT']
+        df_ins['ins_DAYS_ENTRY_PAYMENT_DAYS_INSTALMENT'] = df_ins['DAYS_ENTRY_PAYMENT'] - df_ins['DAYS_INSTALMENT']
         df_ins['ins_NUM_INSTALMENT_NUMBER_100'] = (df_ins['NUM_INSTALMENT_NUMBER'] == 100).astype(int)
         df_ins['ins_DAYS_INSTALMENT_more_NUM_INSTALMENT_NUMBER'] = (df_ins['DAYS_INSTALMENT'] > df_ins['NUM_INSTALMENT_NUMBER'] * 50 / 3 - 11500 / 3).astype(int)
-        df_ins['ins_AMT_INSTALMENT - AMT_PAYMENT'] = df_ins['AMT_INSTALMENT'] - df_ins['AMT_PAYMENT']
-        df_ins['ins_AMT_PAYMENT / AMT_INSTALMENT'] = df_ins['AMT_PAYMENT'] / df_ins['AMT_INSTALMENT']
+        df_ins['ins_AMT_INSTALMENT_AMT_PAYMENT'] = df_ins['AMT_INSTALMENT'] - df_ins['AMT_PAYMENT']
+        df_ins['ins_AMT_PAYMENT_div_AMT_INSTALMENT'] = df_ins['AMT_PAYMENT'] / df_ins['AMT_INSTALMENT']
         
         # Categorical features with One-Hot encode
         df_ins, categorical = self.one_hot_encoder(df_ins, nan_as_category)
@@ -388,6 +527,9 @@ class FeatureEngineering:
         df_ins_agg['INSTAL_COUNT'] = df_ins.groupby('SK_ID_CURR').size()
         del df_ins
         gc.collect()
+
+        df_ins_agg = df_ins_agg.replace([np.inf, -np.inf], np.nan)
+        df_ins_agg = df_ins_agg.fillna(df_ins_agg.max() + (df_ins_agg.max() * 0.4))
         
         return self.reduce_mem_usage(df_ins_agg)
 
@@ -396,6 +538,23 @@ class FeatureEngineering:
 
     def credit_card_balance(self, file_path, nan_as_category = True):
         df_card = pd.read_csv(file_path + 'credit_card_balance.csv')
+
+        for col in df_card.columns:
+            if df_card[col].dtype=='O':
+                df_card[col] = df_card[col].astype(str).str.replace(" ","_")
+                df_card[col] = df_card[col].astype(str).str.replace(':','_')
+                df_card[col]=  df_card[col].astype(str).str.replace("/","_")
+                df_card[col] = df_card[col].astype(str).str.replace(",","")
+                df_card[col] = df_card[col].astype(str).str.replace(" ","_")
+                ###
+                df_card[col] = df_card[col].astype(str).str.replace('-', '_')
+                df_card[col] = df_card[col].astype(str).str.replace(r'\,', r'_')
+                df_card[col] = df_card[col].astype(str).str.replace(r'\(', r'_')
+                df_card[col] = df_card[col].astype(str).str.replace(r'\)', r'_')
+                df_card[col] = df_card[col].astype(str).str.replace(r'\+', r'_')
+
+        # 欠損値補完
+        #df_card = df_card.fillna(0)
         
         # Replace some outliers
         df_card.loc[df_card['AMT_PAYMENT_CURRENT'] > 4000000, 'AMT_PAYMENT_CURRENT'] = np.nan
@@ -403,21 +562,21 @@ class FeatureEngineering:
 
         # Some new features
         df_card['card_missing'] = df_card.isnull().sum(axis = 1).values
-        df_card['card_SK_DPD-MONTHS_BALANCE'] = df_card['SK_DPD'] - df_card['MONTHS_BALANCE']
-        df_card['card_SK_DPD_DEF-MONTHS_BALANCE'] = df_card['SK_DPD_DEF'] - df_card['MONTHS_BALANCE']
-        df_card['card_SK_DPD-SK_DPD_DEF'] = df_card['SK_DPD'] - df_card['SK_DPD_DEF']
+        df_card['card_SK_DPD__MONTHS_BALANCE'] = df_card['SK_DPD'] - df_card['MONTHS_BALANCE']
+        df_card['card_SK_DPD_DEF__MONTHS_BALANCE'] = df_card['SK_DPD_DEF'] - df_card['MONTHS_BALANCE']
+        df_card['card_SK_DPD__SK_DPD_DEF'] = df_card['SK_DPD'] - df_card['SK_DPD_DEF']
         
-        df_card['card_AMT_TOTAL_RECEIVABLE-AMT_RECIVABLE'] = df_card['AMT_TOTAL_RECEIVABLE'] - df_card['AMT_RECIVABLE']
-        df_card['card_AMT_TOTAL_RECEIVABLE-AMT_RECEIVABLE_PRINCIPAL'] = df_card['AMT_TOTAL_RECEIVABLE'] - df_card['AMT_RECEIVABLE_PRINCIPAL']
-        df_card['card_AMT_RECIVABLE-AMT_RECEIVABLE_PRINCIPAL'] = df_card['AMT_RECIVABLE'] - df_card['AMT_RECEIVABLE_PRINCIPAL']
+        df_card['card_AMT_TOTAL_RECEIVABLE__AMT_RECIVABLE'] = df_card['AMT_TOTAL_RECEIVABLE'] - df_card['AMT_RECIVABLE']
+        df_card['card_AMT_TOTAL_RECEIVABLE__AMT_RECEIVABLE_PRINCIPAL'] = df_card['AMT_TOTAL_RECEIVABLE'] - df_card['AMT_RECEIVABLE_PRINCIPAL']
+        df_card['card_AMT_RECIVABLE__AMT_RECEIVABLE_PRINCIPAL'] = df_card['AMT_RECIVABLE'] - df_card['AMT_RECEIVABLE_PRINCIPAL']
 
-        df_card['card_AMT_BALANCE-AMT_RECIVABLE'] = df_card['AMT_BALANCE'] - df_card['AMT_RECIVABLE']
-        df_card['card_AMT_BALANCE-AMT_RECEIVABLE_PRINCIPAL'] = df_card['AMT_BALANCE'] - df_card['AMT_RECEIVABLE_PRINCIPAL']
-        df_card['card_AMT_BALANCE-AMT_TOTAL_RECEIVABLE'] = df_card['AMT_BALANCE'] - df_card['AMT_TOTAL_RECEIVABLE']
+        df_card['card_AMT_BALANCE__AMT_RECIVABLE'] = df_card['AMT_BALANCE'] - df_card['AMT_RECIVABLE']
+        df_card['card_AMT_BALANCE__AMT_RECEIVABLE_PRINCIPAL'] = df_card['AMT_BALANCE'] - df_card['AMT_RECEIVABLE_PRINCIPAL']
+        df_card['card_AMT_BALANCE__AMT_TOTAL_RECEIVABLE'] = df_card['AMT_BALANCE'] - df_card['AMT_TOTAL_RECEIVABLE']
 
-        df_card['card_AMT_DRAWINGS_CURRENT-AMT_DRAWINGS_ATM_CURRENT'] = df_card['AMT_DRAWINGS_CURRENT'] - df_card['AMT_DRAWINGS_ATM_CURRENT']
-        df_card['card_AMT_DRAWINGS_CURRENT-AMT_DRAWINGS_OTHER_CURRENT'] = df_card['AMT_DRAWINGS_CURRENT'] - df_card['AMT_DRAWINGS_OTHER_CURRENT']
-        df_card['card_AMT_DRAWINGS_CURRENT-AMT_DRAWINGS_POS_CURRENT'] = df_card['AMT_DRAWINGS_CURRENT'] - df_card['AMT_DRAWINGS_POS_CURRENT']
+        df_card['card_AMT_DRAWINGS_CURRENT__AMT_DRAWINGS_ATM_CURRENT'] = df_card['AMT_DRAWINGS_CURRENT'] - df_card['AMT_DRAWINGS_ATM_CURRENT']
+        df_card['card_AMT_DRAWINGS_CURRENT__AMT_DRAWINGS_OTHER_CURRENT'] = df_card['AMT_DRAWINGS_CURRENT'] - df_card['AMT_DRAWINGS_OTHER_CURRENT']
+        df_card['card_AMT_DRAWINGS_CURRENT__AMT_DRAWINGS_POS_CURRENT'] = df_card['AMT_DRAWINGS_CURRENT'] - df_card['AMT_DRAWINGS_POS_CURRENT']
         
         # Categorical features with One-Hot encode
         df_card, categorical = self.one_hot_encoder(df_card, nan_as_category)
@@ -433,6 +592,9 @@ class FeatureEngineering:
         df_card_agg['CARD_COUNT'] = df_card.groupby('SK_ID_CURR').size()
         del df_card
         gc.collect()
+
+        df_card_agg = df_card_agg.replace([np.inf, -np.inf], np.nan)
+        df_card_agg = df_card_agg.fillna(df_card_agg.max() + (df_card_agg.max() * 0.4))
         
         return self.reduce_mem_usage(df_card_agg)
 
