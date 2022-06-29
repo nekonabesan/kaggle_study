@@ -104,6 +104,12 @@ class FeatureEngineering:
         gc.collect()
         """
         df = pd.read_csv(file_path + file_name)
+        # Read data and merge
+        df_train = pd.read_csv(file_path + 'application_train.csv')
+        df_test = pd.read_csv(file_path + 'application_test.csv')
+        df = pd.concat([df_train, df_test], axis = 0, ignore_index = True)
+        del df_train, df_test
+        gc.collect()
         
         for col in df.columns:
             #if df[col].dtype=='O':
@@ -121,13 +127,13 @@ class FeatureEngineering:
                 df[col] = df[col].astype(str).str.replace(r'\+', r'_')
 
         # Remove some rows with values not present in test set
-        #df.drop(df[df['CODE_GENDER'] == 'XNA'].index, inplace = True)
-        #df.drop(df[df['NAME_INCOME_TYPE'] == 'Maternity leave'].index, inplace = True)
-        #df.drop(df[df['NAME_FAMILY_STATUS'] == 'Unknown'].index, inplace = True)
-        df['CODE_GENDER'].replace(['XNA'], ['M'], inplace=True)
-        df['NAME_INCOME_TYPE'].replace(['Maternityleave'], ['Unemployed'], inplace=True)
-        df['NAME_INCOME_TYPE'].replace(['Maternity_leave'], ['Unemployed'], inplace=True)
-        df['NAME_FAMILY_STATUS'].replace('Unknown', 'Married', inplace=True)
+        df.drop(df[df['CODE_GENDER'] == 'XNA'].index, inplace = True)
+        df.drop(df[df['NAME_INCOME_TYPE'] == 'Maternity leave'].index, inplace = True)
+        df.drop(df[df['NAME_FAMILY_STATUS'] == 'Unknown'].index, inplace = True)
+        #df['CODE_GENDER'].replace(['XNA'], ['M'], inplace=True)
+        #df['NAME_INCOME_TYPE'].replace(['Maternityleave'], ['Unemployed'], inplace=True)
+        #df['NAME_INCOME_TYPE'].replace(['Maternity_leave'], ['Unemployed'], inplace=True)
+        #df['NAME_FAMILY_STATUS'].replace('Unknown', 'Married', inplace=True)
         df['DAYS_EMPLOYED'].replace(365243, np.nan, inplace=True)
 
         # Remove some empty features
