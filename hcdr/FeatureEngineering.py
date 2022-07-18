@@ -11,6 +11,7 @@ import gc
 from sklearn import metrics
 import optuna
 from optuna.distributions import UniformDistribution
+from scipy.stats import ranksums
 
 from pandas.api.types import is_string_dtype
 from pandas.api.types import is_numeric_dtype
@@ -27,6 +28,7 @@ from yaml import warnings
 import xgboost as xgb
 from sklearn.metrics import log_loss
 from xgboost.sklearn import XGBClassifier
+
 
 import warnings
 
@@ -678,7 +680,7 @@ class FeatureEngineering:
         else:
             diff = abs(c0.median(axis = 0) - c1.median(axis = 0))
             
-        p = self.ranksums(c0, c1)[1] if ((len(c0) >= 20) & (len(c1) >= 20)) else 2
+        p = ranksums(c0, c1)[1] if ((len(c0) >= 20) & (len(c1) >= 20)) else 2
             
         return [diff, p]
 
