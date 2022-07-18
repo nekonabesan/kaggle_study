@@ -9,10 +9,12 @@ import pickle
 import gc
 from sklearn import metrics
 import optuna
+import tensorflow as tf
+
 from optuna.distributions import UniformDistribution
 
 from sklearn.preprocessing import OneHotEncoder, LabelEncoder
-from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import KFold, StratifiedKFold, train_test_split
 from sklearn.metrics import roc_auc_score
 from sqlalchemy import null
 
@@ -23,6 +25,11 @@ from yaml import warnings
 import xgboost as xgb
 from sklearn.metrics import log_loss
 from xgboost.sklearn import XGBClassifier
+
+from keras.layers import Dense, Dropout
+from keras.models import Sequential
+from tensorflow import feature_column
+from keras.callbacks import EarlyStopping
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -101,7 +108,7 @@ class Baseline:
             model.fit(x_tr
                 ,y_tr
                 ,eval_set=[(x_tr, y_tr), (x_va, y_va)]
-                ,early_stopping_rounds=100
+                ,early_stopping_rounds=2000
                 ,verbose=100
             )
 

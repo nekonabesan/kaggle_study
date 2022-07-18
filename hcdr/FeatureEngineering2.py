@@ -125,6 +125,117 @@ class FeatureEngineering2:
         test_df = pd.read_csv(r'./home-credit-default-risk/application_test.csv')
         df = df.append(test_df).reset_index()
 
+
+        # -----------------------------2022/06/30-----------------------------#
+        # Remove some empty features
+        #df.drop(['FLAG_DOCUMENT_2', 'FLAG_DOCUMENT_10', 'FLAG_DOCUMENT_12', 'FLAG_DOCUMENT_13', 'FLAG_DOCUMENT_14', 
+        #        'FLAG_DOCUMENT_15', 'FLAG_DOCUMENT_16', 'FLAG_DOCUMENT_17', 'FLAG_DOCUMENT_19', 'FLAG_DOCUMENT_20', 
+        #        'FLAG_DOCUMENT_21', 
+        #        'EMERGENCYSTATE_MODE', 'FONDKAPREMONT_MODE', 'HOUSETYPE_MODE', 'WALLSMATERIAL_MODE'], axis = 1, inplace = True)
+        # -----------------------------2022/06/30-----------------------------#
+
+
+        ##################################################################
+        # カテゴリ変数の整備
+        # （主に出現頻度が少ないカテゴリを整備していく）
+        ##################################################################
+
+        # -----------------------------2022/07/04-----------------------------#
+        # 収入区分（NAME_INCOME_TYPE）は全部で8区分あるが、うち4区分は件数が小さい（30件以下）ため、
+        # 近い意味合いのクラスに併合してしまうこととする。
+        df.loc[df['NAME_INCOME_TYPE'] == 'Businessman', 'NAME_INCOME_TYPE'] = 'Commercial associate'
+        df.loc[df['NAME_INCOME_TYPE'] == 'Maternity leave', 'NAME_INCOME_TYPE'] = 'Pensioner'
+        df.loc[df['NAME_INCOME_TYPE'] == 'Student', 'NAME_INCOME_TYPE'] = 'State servant'
+        df.loc[df['NAME_INCOME_TYPE'] == 'Unemployed', 'NAME_INCOME_TYPE'] = 'Pensioner'
+
+        # 組織区分（ORGANIZATION_TYPE）は区分が多すぎるため、
+        # 頻度の小さいものは併合して整理することとする。
+        df["ORGANIZATION_TYPE"] = np.where(df["ORGANIZATION_TYPE"].str.contains("Business Entity"), 
+        "Business_Entity", df["ORGANIZATION_TYPE"])
+        df["ORGANIZATION_TYPE"] = np.where(df["ORGANIZATION_TYPE"].str.contains("Industry"), 
+        "Industry", df["ORGANIZATION_TYPE"])
+        df["ORGANIZATION_TYPE"] = np.where(df["ORGANIZATION_TYPE"].str.contains("Trade"),
+        "Trade", df["ORGANIZATION_TYPE"])
+        df["ORGANIZATION_TYPE"] = np.where(df["ORGANIZATION_TYPE"].str.contains("Transport"),
+        "Transport", df["ORGANIZATION_TYPE"])
+        df["ORGANIZATION_TYPE"] = np.where(df["ORGANIZATION_TYPE"].isin(["School", "Kindergarten", "University"]),
+        "Education", df["ORGANIZATION_TYPE"])
+        df["ORGANIZATION_TYPE"] = np.where(df["ORGANIZATION_TYPE"].isin(["Emergency","Police", "Medicine","Goverment", "Postal", "Military", "Security Ministries", "Legal Services"]),
+        "Official", df["ORGANIZATION_TYPE"])
+        df["ORGANIZATION_TYPE"] = np.where(df["ORGANIZATION_TYPE"].isin(["Bank", "Insurance"]),
+        "Finance", df["ORGANIZATION_TYPE"])
+        df["ORGANIZATION_TYPE"] = np.where(df["ORGANIZATION_TYPE"].str.contains("Goverment"), 
+        "Government", df["ORGANIZATION_TYPE"])
+        df["ORGANIZATION_TYPE"] = np.where(df["ORGANIZATION_TYPE"].isin(["Realtor", "Housing"]),
+        "Realty", df["ORGANIZATION_TYPE"])
+        df["ORGANIZATION_TYPE"] = np.where(df["ORGANIZATION_TYPE"].isin(["Hotel", "Restaurant","Services"]),
+        "TourismFoodSector", df["ORGANIZATION_TYPE"])
+        df["ORGANIZATION_TYPE"] = np.where(df["ORGANIZATION_TYPE"].isin(["Cleaning","Electricity", "Telecom", "Mobile", "Advertising", "Religion", "Culture"]),
+        "Other", df["ORGANIZATION_TYPE"])
+
+        # 職業区分（OCCUPATION_TYPE）は区分が多すぎるため、
+        # 頻度の小さいものは併合して整理することとする。
+        df["OCCUPATION_TYPE"] = np.where(df["OCCUPATION_TYPE"].isin(["Low-skill Laborers", "Cooking staff", "Security staff", "Private service staff", "Cleaning staff", "Waiters/barmen staff"]),
+        "Low_skill_staff", df["OCCUPATION_TYPE"])
+        df["OCCUPATION_TYPE"] = np.where(df["OCCUPATION_TYPE"].isin(["IT staff", "High skill tech staff"]),
+        "High_skill_staff", df["OCCUPATION_TYPE"])
+        df["OCCUPATION_TYPE"] = np.where(df["OCCUPATION_TYPE"].isin(["Secretaries", "HR staff","Realty agents"]),
+        "Others", df["OCCUPATION_TYPE"])
+
+        # 申込様式（NAME_TYPE_SUITE）は細かい区分が存在するが、構成比1%を切るものは全て Rare としてまとめる。
+        # また、Spouse, partner は スペースが入っていて使いづらいので改名しておく。
+        tmp = df["NAME_TYPE_SUITE"].value_counts() / len(df)
+        rare_labels = tmp[tmp < 0.01].index
+        df["NAME_TYPE_SUITE"] = np.where(df["NAME_TYPE_SUITE"].isin(rare_labels), 'Rare', df["NAME_TYPE_SUITE"])
+        del tmp
+        gc.collect()
+        df["NAME_TYPE_SUITE"] = np.where(df["NAME_TYPE_SUITE"].str.contains("Spouse, partner"),
+        "Spouse_partner", df["NAME_TYPE_SUITE"])
+
+        # 学歴区分（NAME_EDUCATION_TYPE）のうち「Academic degree」は頻度が低いので、
+        # Higher education に併合して整理することとする。
+        # また、Secondary / secondary special は スペースが入っていて使いづらいので改名しておく。
+        df["NAME_EDUCATION_TYPE"] = np.where(df["NAME_EDUCATION_TYPE"] == "Academic degree",
+        "Higher education", df["NAME_EDUCATION_TYPE"])
+        df["NAME_EDUCATION_TYPE"] = np.where(df["NAME_EDUCATION_TYPE"].str.contains("Secondary / secondary special"),
+        "Secondary_secondary_special", df["ORGANIZATION_TYPE"])
+
+        # NAME_FAMILY_STATUS の Single / not married は スペースが入っていて使いづらいので改名しておく。
+        df["NAME_FAMILY_STATUS"] = np.where(df["NAME_FAMILY_STATUS"].str.contains("Single / not married"),
+        "Single_not_married", df["NAME_FAMILY_STATUS"])
+
+        # NAME_HOUSING_TYPE の House / apartment は スペースが入っていて使いづらいので改名しておく。
+        df["NAME_HOUSING_TYPE"] = np.where(df["NAME_HOUSING_TYPE"].str.contains("House / apartment"),
+        "House_apartment", df["NAME_HOUSING_TYPE"])
+
+        # 地域フラグ（REG_〇〇）についてはフラグが 1 となっているカラム数を総計した NEW_REGION という変数を作成した。
+        # 元の変数は削除する事とした。
+        cols = ["REG_REGION_NOT_LIVE_REGION","REG_REGION_NOT_WORK_REGION", "LIVE_REGION_NOT_WORK_REGION", 
+        "REG_CITY_NOT_LIVE_CITY","REG_CITY_NOT_WORK_CITY","LIVE_CITY_NOT_WORK_CITY"]
+        df["NEW_REGION"] = df[cols].sum(axis = 1)
+        df.drop(cols, axis = 1, inplace = True)
+
+        # 提出書類フラグ（FLAG_DOC_〇〇）についてはフラグが 1 となっているカラム数を総計した NEW_DOCUMENT という変数を作成した。
+        # 元の変数は削除する事とした。
+        docs = [col for col in df.columns if 'FLAG_DOC' in col]
+        df['NEW_DOCUMENT'] = df[docs].sum(axis=1)
+        df.drop(docs, axis = 1, inplace = True)
+
+        # 申請日時の情報（WEEKDAY_APPR_PROCESS_START と HOUR_APPR_PROCESS_START）については
+        # 元の変数は残しつつも、周期エンコーディングを実行した。
+        # （曜日・時刻を半径1の円周上に配置し、その座標を変数とする）
+        weekday_dict = {'MONDAY': 1, 'TUESDAY': 2, 'WEDNESDAY': 3, 'THURSDAY': 4, 'FRIDAY': 5, 'SATURDAY': 6, 'SUNDAY': 7}
+        df.replace({'WEEKDAY_APPR_PROCESS_START': weekday_dict}, inplace=True)
+        df['NEW_WEEKDAY_APPR_PROCESS_START' + "_SIN"] = np.sin(2 * np.pi * df["WEEKDAY_APPR_PROCESS_START"]/7)
+        df["NEW_WEEKDAY_APPR_PROCESS_START" + "_COS"] = np.cos(2 * np.pi * df["WEEKDAY_APPR_PROCESS_START"]/7)
+        df['NEW_HOUR_APPR_PROCESS_START' + "_SIN"] = np.sin(2 * np.pi * df["HOUR_APPR_PROCESS_START"]/23)
+        df["NEW_HOUR_APPR_PROCESS_START" + "_COS"] = np.cos(2 * np.pi * df["HOUR_APPR_PROCESS_START"]/23)
+        # -----------------------------2022/07/04-----------------------------#
+
+
+
+
+
         # general cleaning procedures
         df = df[df['CODE_GENDER'] != 'XNA']
         df = df[df['AMT_INCOME_TOTAL'] < 20000000] # remove a outlier 117M
