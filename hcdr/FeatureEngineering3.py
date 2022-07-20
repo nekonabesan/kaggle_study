@@ -116,6 +116,28 @@ class FeatureEngineering3:
         apps['APPS_EXT_SOURCE_MEAN'] = apps[['EXT_SOURCE_1', 'EXT_SOURCE_2', 'EXT_SOURCE_3']].mean(axis=1)
         apps['APPS_EXT_SOURCE_STD'] = apps[['EXT_SOURCE_1', 'EXT_SOURCE_2', 'EXT_SOURCE_3']].std(axis=1)
         apps['APPS_EXT_SOURCE_STD'] = apps['APPS_EXT_SOURCE_STD'].fillna(apps['APPS_EXT_SOURCE_STD'].mean())
+
+
+        #------------------------------2022/07/20---------------------------------#
+        apps['APP_EXT_SOURCE_2*EXT_SOURCE_3*DAYS_BIRTH'] = apps['EXT_SOURCE_1'] * apps['EXT_SOURCE_2'] * apps['DAYS_BIRTH']
+        apps['APP_SCORE1_TO_FAM_CNT_RATIO'] = apps['EXT_SOURCE_1'] / apps['CNT_FAM_MEMBERS']
+        apps['APP_SCORE1_TO_GOODS_RATIO'] = apps['EXT_SOURCE_1'] / apps['AMT_GOODS_PRICE']
+        apps['APP_SCORE1_TO_CREDIT_RATIO'] = apps['EXT_SOURCE_1'] / apps['AMT_CREDIT']
+        apps['APP_SCORE1_TO_SCORE2_RATIO'] = apps['EXT_SOURCE_1'] / apps['EXT_SOURCE_2']
+        apps['APP_SCORE1_TO_SCORE3_RATIO'] = apps['EXT_SOURCE_1'] / apps['EXT_SOURCE_3']
+        apps['APP_SCORE2_TO_CREDIT_RATIO'] = apps['EXT_SOURCE_2'] / apps['AMT_CREDIT']
+        apps['APP_SCORE2_TO_REGION_RATING_RATIO'] = apps['EXT_SOURCE_2'] / apps['REGION_RATING_CLIENT']
+        apps['APP_SCORE2_TO_CITY_RATING_RATIO'] = apps['EXT_SOURCE_2'] / apps['REGION_RATING_CLIENT_W_CITY']
+        apps['APP_SCORE2_TO_POP_RATIO'] = apps['EXT_SOURCE_2'] / apps['REGION_POPULATION_RELATIVE']
+        apps['APP_SCORE2_TO_PHONE_CHANGE_RATIO'] = apps['EXT_SOURCE_2'] / apps['DAYS_LAST_PHONE_CHANGE']
+        apps['APP_EXT_SOURCE_1*EXT_SOURCE_2'] = apps['EXT_SOURCE_1'] * apps['EXT_SOURCE_2']
+        apps['APP_EXT_SOURCE_1*EXT_SOURCE_3'] = apps['EXT_SOURCE_1'] * apps['EXT_SOURCE_3']
+        apps['APP_EXT_SOURCE_2*EXT_SOURCE_3'] = apps['EXT_SOURCE_2'] * apps['EXT_SOURCE_3']
+        apps['APP_EXT_SOURCE_1*DAYS_EMPLOYED'] = apps['EXT_SOURCE_1'] * apps['DAYS_EMPLOYED']
+        apps['APP_EXT_SOURCE_2*DAYS_EMPLOYED'] = apps['EXT_SOURCE_2'] * apps['DAYS_EMPLOYED']
+        apps['APP_EXT_SOURCE_3*DAYS_EMPLOYED'] = apps['EXT_SOURCE_3'] * apps['DAYS_EMPLOYED']
+        #------------------------------2022/07/20---------------------------------#
+
         
         # AMT_ANNUITY - amount should be paid per month.
         # AMT_CREDIT  - total amount of loan.
