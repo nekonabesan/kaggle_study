@@ -42,7 +42,7 @@ class Model1Lgb:
             ,'min_split_gain': 0.5
             ,'reg_alpha': 0.0
             ,'reg_lambda': 100
-            ,'n_estimators': 10000
+            ,'n_estimators': 2000
         }
         
         num_round = 100
