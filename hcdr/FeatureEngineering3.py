@@ -197,7 +197,6 @@ class FeatureEngineering3:
     def get_prev_amt_agg(self, prev):
         '''
         A newly creatd feature aggregation 
-        새롭게 생성된 대출 신청액 대비 다른 금액 차이 및 비율로 aggregation 수행. 
         '''
         agg_dict = {
             # aggregation. 
